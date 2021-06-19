@@ -1,0 +1,99 @@
+﻿@page "/search/{searchtext}"
+
+
+@using ProjectEshop.Web.Data
+@using ProjectEshop.Web.ApiClients
+@using Radzen.Blazor
+@using ProjectEshop.Web.ApiClients
+@using System.Timers;
+@using System.Windows;
+@using ProjectEshop.Web.SearchModels;
+@inject IProjectEshopApiClients ApiClient
+@inject NavigationManager NavManager
+
+@code {
+
+
+
+    [Parameter]
+    public string SearchText { get; set; }
+    private List<SearchVisualModel> SearchResults = new List<SearchVisualModel> { new SearchVisualModel {TextContent = "Nothing in here :(" } };
+    private SearchVisualModel SearchResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var searchResults = ApiClient.SearchAsync(SearchText).Result;
+        SearchResults = new List<SearchVisualModel>();
+        SearchResults.AddRange(searchResults.Categories
+            .Select(x => new SearchVisualModel
+            {
+                Id = x.Id,
+                TextContent = x.CategoryName,
+                Type = ContentEnum.Category
+            }));
+        SearchResults.AddRange(searchResults.Products
+            .Select(x => new SearchVisualModel
+            {
+                Id = x.Id,
+                TextContent = x.ProductName + " - " + x.ProductDescription,
+                Type = ContentEnum.Product
+            }));
+        SearchResults.AddRange(searchResults.Manufacturers
+            .Select(x => new SearchVisualModel
+            {
+                Id = x.Id,
+                TextContent = x.ManufacturerName + " - " + x.Description + " - " + x.Country,
+                Type = ContentEnum.Manufacturer
+            }));
+        SearchResults.AddRange(searchResults.Scores
+            .Select(x => new SearchVisualModel
+            {
+                Id = x.IdProduct,
+                TextContent = x.TextScore,
+                Type = ContentEnum.Score
+            }));
+    }
+
+    private Task RowClick(SearchVisualModel model)
+    {
+        switch (model.Type)
+        {
+            case ContentEnum.Product:
+                NavManager.NavigateTo($"/product/{model.Id}");
+                break;
+            case ContentEnum.Manufacturer:
+                NavManager.NavigateTo($"/manufacturer/{model.Id}");
+                break;
+            case ContentEnum.Score:
+                NavManager.NavigateTo($"/product/{model.Id}");
+                break;
+        }
+        return Task.CompletedTask;
+
+    }
+
+
+
+}
+
+<h3>Search:</h3>
+
+
+
+<RadzenGrid PagerPosition="PagerPosition.TopAndBottom"
+            AllowFiltering="true"
+            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+            FilterMode="FilterMode.Advanced"
+            AllowPaging="true"
+            PageSize="10"
+            AllowSorting="true"
+            Data="@SearchResults"
+            TItem="SearchVisualModel"
+            RowClick="RowClick"
+            ColumnWidth="200px"
+            AllowColumnResize="true"
+            LogicalFilterOperator="LogicalFilterOperator.Or">
+    <Columns>
+        <RadzenGridColumn TItem="SearchVisualModel" Property="TextContent" Title="Results" />
+    </Columns>
+</RadzenGrid>

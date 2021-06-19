@@ -1,0 +1,131 @@
+﻿@page "/manufacturerform/{id:int}"
+
+
+@using ProjectEshop.Web.ApiClients
+@using Radzen.Blazor
+@using System.Drawing
+@using System.IO
+@inject IProjectEshopApiClients ApiClient
+@inject NavigationManager NavManager
+
+
+<h3>ManufacturerForm</h3>
+
+
+
+<h3>Name</h3>
+<RadzenTextBox Placeholder="Search..." @bind-Value="model.ManufacturerName" />
+<h3>Description</h3>
+<RadzenTextBox Placeholder="Search..." @bind-Value="model.Description" />
+<h3>Country</h3>
+<RadzenTextBox Placeholder="Search..." @bind-Value="model.Country" />
+
+<h3>Logo</h3>
+<InputFile OnChange="@SingleUpload" />
+<img style="width=50px;" src="@Img" id="imageViever">
+
+<br />
+<br />
+<br />
+<br />
+<RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => Submit()) Text="Save" ButtonStyle="ButtonStyle.Primary" />
+
+
+@code {
+
+
+    private ManufacturerDto model { get; set; }
+    int progress;
+    string info;
+
+    [Parameter]
+    public int Id { get; set; }
+    public string Img { get; set; }
+
+    RadzenUpload upload { get; set; }
+
+    protected async Task Submit()
+    {
+        model.ManufacturerLogos = new List<ManufacturerLogoDto>();
+        if (!String.IsNullOrEmpty(Img))
+        {
+            var imgSplit = Img.Split(',')[1];
+            var imgBytes = Convert.FromBase64String(imgSplit);
+            model.ManufacturerLogos.Add(new ManufacturerLogoDto { Logo = imgBytes });
+        }
+
+
+        if (model.Id > 0)
+        {
+            await ApiClient.ManufacturerEditAsync(model);
+        }
+        else
+        {
+            await ApiClient.ManufacturerCreateAsync(model);
+        }
+        NavManager.NavigateTo($"/ManufacturerList/");
+    }
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        MemoryStream ms = new MemoryStream();
+        await e.File.OpenReadStream().CopyToAsync(ms);
+        var bytes = ms.ToArray();
+        Img = Hex2Base64(bytes);
+    }
+
+    void OnProgress(UploadProgressArgs args, string name)
+    {
+        this.info = $"% '{name}' / {args.Loaded} of {args.Total} bytes.";
+        this.progress = args.Progress;
+
+        if (args.Progress == 100)
+        {
+            foreach (var file in args.Files)
+            {
+                using (var ms = new MemoryStream())
+                {
+                    ImageToByteArray(Image.FromFile(file.Name));
+                    Img = Hex2Base64(ms.ToArray());
+                }
+            }
+        }
+    }
+
+    protected string Hex2Base64(byte[] input)
+    {
+        var base64 = Convert.ToBase64String(input);
+        return String.Format("data:image/gif;base64,{0}", base64);
+    }
+
+    public byte[] ImageToByteArray(System.Drawing.Image imageIn)
+    {
+        using (var ms = new MemoryStream())
+        {
+            imageIn.Save(ms, imageIn.RawFormat);
+            return ms.ToArray();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id > 0)
+        {
+            model = ApiClient.ManufacturerGetDetailAsync(Id).Result;
+        }
+        else
+        {
+            model = new ManufacturerDto();
+        }
+
+        var imgSrc = "";
+
+        if (model.ManufacturerLogos?.Count > 0)
+        {
+            imgSrc = Hex2Base64(model.ManufacturerLogos?.FirstOrDefault().Logo);
+        }
+
+        Img = imgSrc;
+
+    }
+}

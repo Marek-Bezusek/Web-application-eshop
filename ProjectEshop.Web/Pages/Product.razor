@@ -1,0 +1,101 @@
+﻿@page "/product/{id:int}"
+@using ProjectEshop.Web.Data
+@using ProjectEshop.Web.ApiClients
+@using Radzen.Blazor
+@inject IProjectEshopApiClients ApiClient
+@inject NavigationManager NavManager
+<h3>Product detail</h3>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ProductDto product;
+    private string Review = "";
+    private int Score = 0;
+    RadzenGrid<ScoreDto> ScoreGrid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        product = await ApiClient.ProductGetDetailAsync(Id);
+    }
+    private Task NewEdit(int Id)
+    {
+        NavManager.NavigateTo($"/productform/{Id}");
+        return Task.CompletedTask;
+    }
+
+    private void SubmitReview()
+    {
+        if (String.IsNullOrEmpty(Review)) return;
+
+        var score = new ScoreDto { IdProduct = product.Id, NumberScore = Score, TextScore = Review };
+        ApiClient.ScoreCreateAsync(score);
+        Review = "";
+        Score = 0;
+        product.Scores.Add(score);
+        ScoreGrid.Reload();
+        
+    }
+}
+
+
+@if (product == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <h3>Product name: @product.ProductName</h3>
+    <RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => NewEdit(product.Id)) Text="Edit product" ButtonStyle="ButtonStyle.Primary" />
+
+    var imgSrc = "";
+
+    @if (product.ProductImages?.Count < 1)
+    {
+        imgSrc = "";
+    }
+    else
+    {
+        var base64 = Convert.ToBase64String(product.ProductImages?.FirstOrDefault().Picture);
+        imgSrc = String.Format("data:image/gif;base64,{0}", base64);
+    }
+    <img style="width=100px;padding:35px" src="@imgSrc">
+
+    <p><b>Description</b>: @product.ProductDescription</p>
+
+
+    <ul>
+        <li><b>Price</b>: @product.ProductPrice</li>
+        <li><b>Weight</b>: @product.ProductWeight</li>
+        <li><b>AverageScore</b>: @product.Average</li>
+        <li><b>Quantity in stock</b>: @product.ProductQuantityInStock</li>
+        <li><b>Category</b>: @product.IdCategoryNavigation.CategoryName</li>
+        <li><b>Manufacturer</b>: @product.IdManufacturerNavigation.ManufacturerName</li>
+    </ul>
+
+    <h3>Reviews</h3>
+    <RadzenRating @bind-Value="Score" Stars="5" />
+    <RadzenTextBox @bind-Value="Review"/>
+    <RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => SubmitReview()) Text="Submit" ButtonStyle="ButtonStyle.Primary" />
+    <RadzenGrid @ref="ScoreGrid" PagerPosition="PagerPosition.TopAndBottom" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" AllowPaging="true" PageSize="4"
+                AllowSorting="true" Data="@product.Scores"  TItem="ScoreDto" AllowColumnResize="true" LogicalFilterOperator="LogicalFilterOperator.Or">
+        <Columns>
+            <RadzenGridColumn TItem="ScoreDto" Property="NumberScore" Title="Score:" Sortable="true" Filterable="true" />
+            <RadzenGridColumn TItem="ScoreDto" Property="TextScore" Title="Review:" Sortable="false" Filterable="false" />
+
+
+        </Columns>
+    </RadzenGrid>
+
+
+
+
+
+
+
+}
+
+

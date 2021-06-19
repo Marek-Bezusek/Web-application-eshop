@@ -1,0 +1,73 @@
+﻿@page "/manufacturer/{id:int}"
+@using ProjectEshop.Web.Data
+@using ProjectEshop.Web.ApiClients
+@using Radzen.Blazor
+@inject IProjectEshopApiClients ApiClient
+
+<h3>Manufacturer detail</h3>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+
+private List<ProductDto> products;
+
+private ManufacturerDto manufacturer;
+
+protected override async Task OnInitializedAsync()
+{
+    manufacturer = await ApiClient.ManufacturerGetDetailAsync(Id);
+    products = manufacturer.Products.ToList();
+}
+}
+
+
+@if (manufacturer == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+
+    <h3>@manufacturer.ManufacturerName</h3>
+
+    var imgSrc = "";
+
+    @if (manufacturer.ManufacturerLogos?.Count < 1)
+    {
+        imgSrc = "";
+    }
+    else
+    {
+        var base64 = Convert.ToBase64String(manufacturer.ManufacturerLogos?.FirstOrDefault().Logo);
+        imgSrc = String.Format("data:image/gif;base64,{0}", base64);
+    }
+    <img style="width=100px;" src="@imgSrc">
+    <br>
+    <br>
+    <p>Description: @manufacturer.Description</p>
+    <p>Country: @manufacturer.Country</p>
+    }
+
+    <h3>Product List:</h3>
+
+    <RadzenGrid PagerPosition="PagerPosition.TopAndBottom"
+                AllowFiltering="true"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                FilterMode="FilterMode.Advanced"
+                AllowPaging="true"
+                PageSize="10"
+                AllowSorting="true"
+                Data="@products"
+                TItem="ProductDto"
+                ColumnWidth="200px"
+                AllowColumnResize="true"
+                LogicalFilterOperator="LogicalFilterOperator.Or">
+        <Columns>
+            <RadzenGridColumn TItem="ProductDto" Property="ProductName" Title="Product Name" />
+            <RadzenGridColumn TItem="ProductDto" Property="ProductDescription" Title="Description" />
+        </Columns>
+    </RadzenGrid>

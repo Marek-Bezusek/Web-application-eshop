@@ -1,0 +1,78 @@
+﻿@page "/ManufacturerList"
+
+@using ProjectEshop.Web.Data
+@using ProjectEshop.Web.ApiClients
+@using Radzen.Blazor
+@inject IProjectEshopApiClients ApiClient
+@inject NavigationManager NavManager
+
+@code {
+    private ICollection<ManufacturerDto> manufacturers;
+    private string searchString { get; set; } = "Hledejte";
+
+    protected override async Task OnInitializedAsync()
+    {
+        manufacturers = await ApiClient.ManufacturerGetAllAsync();
+    }
+
+    private Task OnClick(int Id)
+    {
+        NavManager.NavigateTo($"/manufacturer/{Id}");
+        return Task.CompletedTask;
+    }
+
+    private Task NewEdit(int Id)
+    {
+        NavManager.NavigateTo($"/manufacturerform/{Id}");
+        return Task.CompletedTask;
+    }
+}
+
+
+
+<h3>ManufacturerList</h3>
+<p>This component demonstrates fetching data from a service.</p>
+
+@if (manufacturers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => NewEdit(0)) Text="New manufacturer" ButtonStyle="ButtonStyle.Primary" />
+    <RadzenDataList WrapItems="true" AllowPaging="true" Data="@manufacturers" TItem="ManufacturerDto">
+        <Template Context="manufac">
+            <RadzenCard Style="width:300px;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div>Výrobce:</div>
+                        <RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => OnClick(manufac.Id)) Text="@manufac.ManufacturerName" ButtonStyle="ButtonStyle.Secondary" />
+                        <RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => NewEdit(manufac.Id)) Text="Edit" ButtonStyle="ButtonStyle.Warning" />
+                        <br />
+                        @{var imgSrc = "";
+                        }
+                        @if (manufac.ManufacturerLogos?.Count < 1)
+                        {
+                            imgSrc = "";
+                        }
+                        else
+                        {
+                            var base64 = Convert.ToBase64String(manufac.ManufacturerLogos?.FirstOrDefault().Logo);
+                            imgSrc = String.Format("data:image/gif;base64,{0}", base64);
+                        }
+                        <img style="width=50px;" src="@imgSrc">
+                    </div>
+                    <div class="col-md-6">
+                        <div style="margin-top:20px">Description:</div>
+                        <b>@(manufac.Description)</b>
+                        <div style="margin-top:20px">Country:</div>
+                        <b>@(manufac.Country)</b>
+                    </div>
+                </div>
+
+            </RadzenCard>
+        </Template>
+    </RadzenDataList>
+}
+
+

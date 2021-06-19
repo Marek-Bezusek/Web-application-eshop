@@ -1,0 +1,54 @@
+﻿@inherits LayoutComponentBase
+@using ProjectEshop.Web.ApiClients
+@using System.Timers;
+@using System.Windows;
+@using ProjectEshop.Web.SearchModels;
+@inject IProjectEshopApiClients ApiClient
+@inject NavigationManager NavManager
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <div class="main">
+        <div class="top-row px-4">
+            <RadzenTextBox Placeholder="Search..." @bind-Value="StringToSearch" />
+            <RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => OnClick()) Text="Search" ButtonStyle="ButtonStyle.Light" />
+            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+        </div>
+
+        <div class="content px-4">
+            @Body
+        </div>
+    </div>
+</div>
+
+
+
+@code{
+    private List<SearchVisualModel> SearchResults = new List<SearchVisualModel>();
+    private SearchVisualModel SearchResult;
+    System.Threading.Timer SearchTimer;
+    private string StringToSearch { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    private Task OnClick()
+    {
+        if (String.IsNullOrEmpty(StringToSearch))
+        {
+            return Task.CompletedTask;
+        }
+        NavManager.NavigateTo($"/search/{StringToSearch}");
+        return Task.CompletedTask;
+    }
+
+}
+
+
+
+
+
+

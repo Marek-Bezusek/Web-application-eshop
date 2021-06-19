@@ -1,0 +1,59 @@
+﻿@page "/ProductList"
+@using ProjectEshop.Web.ApiClients
+@using Radzen.Blazor
+@inject IProjectEshopApiClients ApiClient
+@inject NavigationManager NavManager
+
+@code {
+    private ICollection<ProductDto> product;
+
+    private const int zero = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        product = await ApiClient.ProductGetAllAsync();
+    }
+
+    private Task RowClick(ProductDto model)
+    {
+        NavManager.NavigateTo($"/product/{model.Id}");
+        return Task.CompletedTask;
+    }
+
+    private Task NewEdit(int Id)
+    {
+        NavManager.NavigateTo($"/productform/{Id}");
+        return Task.CompletedTask;
+    }
+}
+
+
+
+<h3>Product List</h3>
+<RadzenButton style="margin: 0 1rem 1rem 0" Click=@(args => NewEdit(0)) Text="New product" ButtonStyle="ButtonStyle.Primary" />
+<RadzenGrid PagerPosition="PagerPosition.TopAndBottom"
+            AllowFiltering="true"
+            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+            FilterMode="FilterMode.Advanced"
+            AllowPaging="true"
+            PageSize="10"
+            AllowSorting="true"
+            Data="@product"
+            TItem="ProductDto"
+            RowClick="RowClick"
+            ColumnWidth="200px"
+            AllowColumnResize="true"
+            LogicalFilterOperator="LogicalFilterOperator.Or">
+    <Columns>
+        <RadzenGridColumn TItem="ProductDto" Property="ProductName" Title="Product Name" />
+        <RadzenGridColumn TItem="ProductDto" Property="IdCategoryNavigation.CategoryName" Title="Category"/>
+        <RadzenGridColumn TItem="ProductDto" Property="ProductPrice" Title="Price" />
+        <RadzenGridColumn TItem="ProductDto" Property="ProductWeight" Title="Weight" />
+        <RadzenGridColumn TItem="ProductDto" Property="IdManufacturerNavigation.ManufacturerName" Title="Manufacturer" />
+        <RadzenGridColumn TItem="ProductDto" Property="Average" Title="Score">
+
+        </RadzenGridColumn>
+        <RadzenGridColumn TItem="ProductDto" Property="ProductQuantityInStock" Title="In stock" />
+    </Columns>
+</RadzenGrid>
+
